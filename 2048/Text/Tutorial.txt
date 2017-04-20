@@ -1,0 +1,6 @@
+Use 4 button UP, LEFT, DOWN, RIGHT 
+to move all tiles.
+When two tiles with the same number 
+touch, they marge into one.
+You will become king of the game 
+if you get to the 16384 tile.

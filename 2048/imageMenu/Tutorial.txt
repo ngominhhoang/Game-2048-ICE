@@ -1,0 +1,8 @@
+Use 4 button UP, LEFT, DOWN, RIGHT 
+to move all tiles.
+When two tiles with the same number 
+touch, they marge into one.
+If powerbox is full, the best tile
+will be x2.
+If powerbox is empty, a random tile
+will be freezed.
