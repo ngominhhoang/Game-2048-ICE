@@ -1,8 +1,12 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <stdio.h>
+#include <string>
 #include <bits/stdc++.h>
 #include "Play.h"
+
+using namespace std;
 
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
@@ -10,6 +14,7 @@ const int limitSecond = 5;
 const int sum_gImage = 14;
 const int sum_randImage = 3;
 const int sum_letter = 8;
+const int sum_rank = 5;
 const std::string link_gImage[21] = {"Image/2.png","Image/4.png","Image/8.png","Image/16.png","Image/32.png","Image/64.png",
     "Image/128.png","Image/256.png","Image/512.png","Image/1024.png","Image/2048.png","Image/4096.png","Image/8192.png","Image/16384.png"};
 
@@ -27,6 +32,12 @@ const std::string link_Random[3] = {"Image/Rand3.png","Image/Rand2.png","Image/R
 const std::string link_PowerBox = "Image/powerBox.png";
 const std::string link_Liquid = "Image/Liquid.png";
 const std::string link_Mirror = "Image/Mirror.png";
+const std::string link_PlayAgain = "Image/PlayAgain.png";
+const std::string link_BacktoMenu = "Image/BacktoMenu.png";
+const std::string link_PlayAgain_e = "Image/PlayAgain_e.png";
+const std::string link_BacktoMenu_e = "Image/BacktoMenu_e.png";
+const std::string link_CongratBoard = "Image/CongratulationBoard.png";
+const std::string link_Star[sum_rank] = {"Image/Rank1.png","Image/Rank2.png","Image/Rank3.png","Image/Rank4.png","Image/Rank5.png"};
 
 const int row[4] = {0,0,-1,1};
 const int column[4] = {1,-1,0,0};
@@ -38,6 +49,7 @@ const int fix_x = 100;
 const int fix_y = -20;
 bool randNum[4][4],appear,merged,iceNum[4][4];
 bool endgame ;
+int tryAgain = 1;
 int powerPoint,combo,score;
 
 struct Format
@@ -51,7 +63,15 @@ struct Format
     int PresentNumber;
 };
 
+struct ScoreBoard
+{
+    int Score;
+    string Name;
+};
+
 Format Square[4][4];
+
+ScoreBoard gRank[5];
 
 //Texture wrapper class
 
@@ -66,9 +86,8 @@ TTF_Font* gFont = NULL;
 
 //The window we'll be rendering to
 
-
 LTexture gImage[sum_gImage],randImage[sum_randImage],background,NumBG,Empty,iceImage[sum_randImage],ICE,ICE2,gImage_Rotation[sum_gImage],gLetter[sum_letter];
-LTexture powerBox , liquid, mirror, TextScore;
+LTexture powerBox , liquid, mirror, TextScore, PlayAgain[2], BacktoMenu[2],CongratBoard,rankStar[sum_rank];
 
 
 LTexture::LTexture()
@@ -159,7 +178,6 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 	//Return success
 	return mTexture != NULL;
 }
-
 
 void LTexture::setBlendMode( SDL_BlendMode blending )
 {
@@ -332,6 +350,18 @@ bool loadMedia()
             return false;
     }
 
+    if (! loadImage(&PlayAgain[0],link_PlayAgain) || ! loadImage(&PlayAgain[1],link_PlayAgain_e))
+    {
+            printf("Unable to load Image! SDL Error: %s\n",SDL_GetError());
+            return false;
+    }
+
+    if (! loadImage(&BacktoMenu[0],link_BacktoMenu) || ! loadImage(&BacktoMenu[1],link_BacktoMenu_e))
+    {
+            printf("Unable to load Image! SDL Error: %s\n",SDL_GetError());
+            return false;
+    }
+
     for (int i=0; i<sum_letter; ++i)
     {
         if (! loadImage(&gLetter[i],link_letter[i]))
@@ -380,22 +410,68 @@ bool loadMedia()
     gFont = TTF_OpenFont( "Font/tahomabd.ttf", 60 );
     if (gFont == NULL) return false;
 
+    ifstream file_Score("Text/Score.txt");
+    ifstream file_Name("Text/Name.txt");
+    for (int i=0; i<sum_rank; ++i)
+    {
+        file_Score >> gRank[i].Score;
+        getline(file_Name , gRank[i].Name);
+
+        if (! loadImage(&rankStar[i],link_Star[i]))
+        {
+            printf("Unable to load Image! SDL Error: %s\n",SDL_GetError());
+            return false;
+        }
+    }
+    if (! loadImage(&CongratBoard,link_CongratBoard))
+    {
+        printf("Unable to load Image! SDL Error: %s\n",SDL_GetError());
+        return false;
+    }
 
     return true;
 }
 
 void close()
 {
-	//Free loaded images
 	for (int i=0; i<sum_gImage; ++i)
+    {
+        gImage_Rotation[i].free();
         gImage[i].free();
+    }
 
     for (int i=0; i<sum_randImage; ++i)
+    {
         randImage[i].free();
+        iceImage[i].free();
+    }
+
+    for (int i=0; i<sum_letter; ++i)
+    {
+        gLetter[i].free();
+    }
+
+    for (int i=0; i<sum_rank; ++i)
+    {
+        rankStar[i].free();
+    }
 
     background.free();
     Empty.free();
     NumBG.free();
+    ICE.free();
+    ICE2.free();
+    powerBox.free();
+    liquid.free();
+    mirror.free();
+    CongratBoard.free();
+
+    for (int i=0; i<2; ++i)
+    {
+        PlayAgain[i].free();BacktoMenu[i].free();
+    }
+
+
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
 	SDL_DestroyWindow( gWindow );
@@ -432,51 +508,14 @@ int transferCombo(int X)
     return BonusScore[X];
 }
 
-void writeScore()
+int minimizeX(int k,int X)
 {
-    std::string s;
-    int ss2 = score;
-    while (ss2!=0)
-    {
-        char x;
-        x =  (ss2%10)+48;
-        s = x+s;
-        ss2/=10;
-    }
-    if (score == 0) s = "0";
-    int add = (s.length()-1)*18;
-    SDL_Color TextColor = {0,0,0};
-    TextScore.loadFromRenderedText(s,TextColor);
-    TextScore.render(1075-add,215);
+    return X + 10*(k+1) ;
 }
 
-void renderBackground()
+int minimizeY(int k,int Y)
 {
-    SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
-    SDL_RenderClear( gRenderer );
-    background.render(0,0,NULL);
-    NumBG.render(280 - fix_x,180-fix_y,NULL);
-}
-
-void renderSquare()
-{
-    for (int i = 0; i < 4; ++i)
-        for (int j = 0; j < 4; ++j)
-        {
-            int Num;
-            Num = Square[i][j].PresentNumber;
-
-            if (Num == -1 || endgame)
-            {
-                Empty.render(changeX(i),changeY(j),NULL);
-                if (Num == -1) continue;
-            }
-
-            if (!endgame) gImage[Num].render(changeX(i),changeY(j));
-                else gLetter[Num].render(changeX(i),changeY(j));
-
-            if (iceNum[i][j]) ICE.render(changeX(i),changeY(j));
-        }
+    return Y + 10*(k+1);
 }
 
 Format ReFormatSquare(int k_xStart, int k_yStart, int k_xAdd, int k_yAdd, int k_Space, int k_OldNum, int k_PresentNum)
@@ -510,15 +549,11 @@ void createSquare()
         }
 }
 
-void staySquare()
+void createRandNum()
 {
     for (int i=0; i<4; ++i)
         for (int j=0; j<4; ++j)
-        {
-            int PNum = Square[i][j].PresentNumber;
-            Square[i][j] = ReFormatSquare(i, j, 0, 0, 0, PNum, PNum);
-            //if (PNum != -1) std::cout << Square[i][j].PresentNumber;
-        }
+            randNum[i][j] = false;
 }
 
 void createRandomNumber()
@@ -546,14 +581,44 @@ void createRandomNumber()
 
 }
 
-int minimizeX(int k,int X)
+void creategImageBlendingMode()
 {
-    return X + 10*(k+1) ;
+    for (int i=0; i<sum_gImage; ++i)
+        gImage[i].setAlpha(255);
 }
 
-int minimizeY(int k,int Y)
+void drawScore()
 {
-    return Y + 10*(k+1);
+    std::string s = "",s_max = "";
+    int ss2 = score;
+    while (ss2!=0)
+    {
+        char x;
+        x =  (ss2%10)+48;
+        s = x+s;
+        ss2/=10;
+    }
+    if (score == 0) s = "0";
+
+    ss2 = gRank[0].Score;
+    while (ss2!=0)
+    {
+        char x;
+        x =  (ss2%10)+48;
+        s_max = x+s_max;
+        ss2/=10;
+    }
+    if (gRank[0].Score == 0) s_max = "0";
+    if (score > gRank[0].Score) s_max = s;
+
+    int add = (s.length()-1)*18;
+    SDL_Color TextColor = {0,0,0};
+    TextScore.loadFromRenderedText(s,TextColor);
+    TextScore.render(1075-add,215);
+
+    add = (s_max.length()-1)*18;
+    TextScore.loadFromRenderedText(s_max,TextColor);
+    TextScore.render(1075-add,507);
 }
 
 void drawPowerBox(int PPoint)
@@ -569,7 +634,48 @@ void drawPowerBox(int PPoint)
     powerBox.render(750,100);
     liquid.render(790,610 - hh,&PPRect);
     mirror.render(790,202);
-    writeScore();
+    drawScore();
+}
+
+void renderSquare()
+{
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+        {
+            int Num;
+            Num = Square[i][j].PresentNumber;
+            //if (tryAgain>1)cout<<Num<<endl;
+
+            if (Num == -1 || endgame)
+            {
+                Empty.render(changeX(i),changeY(j),NULL);
+                if (Num == -1) continue;
+            }
+
+            if (!endgame) gImage[Num].render(changeX(i),changeY(j));
+                else gLetter[Num].render(changeX(i),changeY(j));
+
+            if (iceNum[i][j]) ICE.render(changeX(i),changeY(j));
+        }
+}
+
+void renderBackground()
+{
+    SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
+    SDL_RenderClear( gRenderer );
+    background.render(0,0,NULL);
+    NumBG.render(280 - fix_x,180-fix_y,NULL);
+}
+
+void staySquare()
+{
+    for (int i=0; i<4; ++i)
+        for (int j=0; j<4; ++j)
+        {
+            int PNum = Square[i][j].PresentNumber;
+            Square[i][j] = ReFormatSquare(i, j, 0, 0, 0, PNum, PNum);
+            //if (PNum != -1) std::cout << Square[i][j].PresentNumber;
+        }
 }
 
 void performAnimation_AppearRandomSquare()
@@ -604,17 +710,6 @@ void performAnimation_AppearRandomSquare()
         SDL_Delay(15);
     }
 
-}
-
-void writeNumber()
-{
-    for (int j=0;j<4;++j)
-    {
-        for (int i=0;i<4;++i)
-            std::cout<<Square[i][j].PresentNumber<<' ';
-        std::cout<<std::endl;
-    }
-     std::cout<<std::endl;
 }
 
 void performAnimation_QuickMove()
@@ -816,7 +911,7 @@ void performAnimation_x2Square()
     SDL_Rect x2Rect;
     x2Rect.x = 0; x2Rect.y = 0; x2Rect.w = 100; x2Rect.h = 100;
 
-    int x = changeX(x2Now_x) , y = changeY(x2Now_y) , flag=0 , add = 8 , x2Num = Square[x2Now_x][x2Now_y].PresentNumber;
+    int x = changeX(x2Now_x) , y = changeY(x2Now_y) , flag=0 , add = 14 , x2Num = Square[x2Now_x][x2Now_y].PresentNumber;
 
     while( abs(add)<=20 )
     {
@@ -858,7 +953,7 @@ void performAnimation_x2Square()
     }
 
     add = 20;
-    while( abs(add) >=8 )
+    while( abs(add) >=14 )
     {
         //std::cout<<1<<' '<<add<<'\n';
         flag+=add;
@@ -936,9 +1031,154 @@ void performAnimation_dropGAMEOVER()
             gLetter[i].render(190+110*(i%4),time[i]*10,NULL,ang[i]);
         }
         SDL_RenderPresent(gRenderer);
-        SDL_Delay(25);
+        SDL_Delay(10);
     }
 
+}
+
+void fillBlank(int pos)
+{
+    SDL_Event e;
+    bool quit = false;
+    SDL_Color TextColor = {0,0,0};
+    string text = "";
+    int letter ;
+
+    bool del = false, add = false;
+
+    CongratBoard.render(150,150);
+    rankStar[pos].render(700,230);
+    SDL_RenderPresent(gRenderer);
+    while (!quit)
+    {
+        if (SDL_PollEvent( &e ) != 0)
+        {
+            if (e.type == SDL_QUIT) {quit = true; tryAgain=false;}
+
+            const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
+
+            if (currentKeyStates[ SDL_SCANCODE_LSHIFT ])
+            {
+                if (e.type == SDL_KEYDOWN)
+                {
+                    letter = e.key.keysym.sym - 32;
+                    if ((letter>=65&&letter<=90)) add = true;
+                }
+
+            }
+                else
+            {
+                if (e.type == SDL_KEYDOWN)
+                {
+                    letter = e.key.keysym.sym;
+                    //cout<<letter<<endl;
+                    if (letter == SDLK_BACKSPACE) del = true;
+                    if (letter == SDLK_RETURN && text.length() > 0) {quit = true; gRank[pos].Name = text;}
+                    if ((letter >= 97 && letter <= 122)||(letter>=48&&letter<=57)||letter==SDLK_SPACE) add = true;
+                }
+
+            }
+        }
+
+        if (add)
+        {
+            if (text.length() <18 ) text = text + (char)letter;
+            add=false;
+        }
+
+        if (del)
+        {
+            if (text.length() > 0)text.erase(text.length()-1,1);
+            del = false;
+        }
+
+        renderBackground();
+        renderSquare();
+        drawPowerBox(powerPoint);
+        CongratBoard.render(150,150);
+        rankStar[pos].render(700,230);
+
+        if (text.length() > 0)
+        {
+            TextScore.loadFromRenderedText(text,TextColor);
+            TextScore.render(300,450);
+        }
+        SDL_RenderPresent(gRenderer);
+    }
+}
+
+void RenewScoreBoard()
+{
+    ofstream file_Name ("Text/Name.txt");
+    ofstream file_Score ("Text/Score.txt");
+    for (int i=0; i<5; ++i)
+    {
+        file_Name<<gRank[i].Name<<endl;
+        file_Score<<gRank[i].Score<<endl;
+    }
+
+}
+
+void finishGame()
+{
+    endgame = true;
+
+    performAnimation_FadedScreen();
+    for (int i=0; i<4; ++i)
+        for (int j=0; j<4; ++j)
+            Square[i][j].PresentNumber = -1;
+
+    performAnimation_dropGAMEOVER();
+
+    bool fillName = false;
+    int newRank;
+    for (int i=0; i<sum_rank; ++i)
+        if (score > gRank[i].Score)
+        {
+            fillName = true;
+            for (int j=sum_rank-2; j>=i+1; --j)
+                gRank[j] = gRank[j-1];
+            gRank[i].Score = score;
+            newRank = i;
+            break;
+        }
+
+    SDL_Event e;
+    bool quit = false;
+    int flag = 0;
+    while (!quit)
+    {
+        if (SDL_PollEvent( &e ) != 0)
+        {
+            if (e.type == SDL_QUIT) {quit = true;tryAgain=false;}
+            if (e.type == SDL_KEYDOWN)
+            {
+                if (e.key.keysym.sym == SDLK_RIGHT || e.key.keysym.sym == SDLK_LEFT) flag = 1-flag;
+                if (e.key.keysym.sym == SDLK_RETURN)
+                {
+                    if (flag == 1) tryAgain = false; else ++tryAgain;
+                    return ;
+                    //return quit;
+                }
+            }
+        }
+        renderBackground();
+        renderSquare();
+        drawPowerBox(powerPoint);
+
+        if (fillName)
+        {
+            fillBlank(newRank);
+            if (!tryAgain) quit = true; else RenewScoreBoard();
+            fillName = false;
+            //cout<<quit;
+        }
+
+        BacktoMenu[flag].render(5,528);
+        PlayAgain[1-flag].render(385,528);
+        SDL_RenderPresent(gRenderer);
+    }
+    //cout<<quit;
 }
 
 bool checktoQuit()
@@ -964,13 +1204,6 @@ bool checktoQuit()
             if (success) return false;
         }
     return true;
-}
-
-void createRandNum()
-{
-    for (int i=0; i<4; ++i)
-        for (int j=0; j<4; ++j)
-            randNum[i][j] = false;
 }
 
 void handleBonus()
@@ -1024,280 +1257,272 @@ void handleBonus()
     }
 }
 
-void endGame()
+void writeNumber()
 {
-    endgame = true;
-
-    performAnimation_FadedScreen();
-    for (int i=0; i<4; ++i)
-        for (int j=0; j<4; ++j)
-            Square[i][j].PresentNumber = -1;
-
-    performAnimation_dropGAMEOVER();
-
-    SDL_Event e;
-    bool quit = false;
-    while (!quit)
+    for (int j=0;j<4;++j)
     {
-        if (SDL_PollEvent( &e ) != 0)
-        {
-            if (e.type == SDL_QUIT) quit = true;
-        }
-        renderBackground();
-        renderSquare();
-        drawPowerBox(powerPoint);
-        SDL_RenderPresent(gRenderer);
+        for (int i=0;i<4;++i)
+            std::cout<<Square[i][j].PresentNumber<<' ';
+        std::cout<<std::endl;
     }
+     std::cout<<std::endl;
 }
 
 void Play()
 {
+    //cout<<tryAgain;
+    //if (tryAgain==0) return;
+    tryAgain = 1;
     if( !init() )
-	{
-		printf( "Failed to initialize!\n" );
-	}
-	else
-	{
-	    if (!loadMedia()) return;
-
-        powerPoint = 50;combo = 0;score = 0;
-        createSquare();
-        createIceNum();
-        //iceNum[2][2] = true;iceNum[1][1] = true;iceNum[3][3] = true;
-        createRandomNumber();
-        createRandomNumber();
-
-        writeNumber();
-        bool quit = false;
-        endgame = false;
-        appear = false;  merged = false;
-        SDL_Event e;
-
-        while( !quit )
+    {
+        printf( "Failed to initialize!\n" );
+    }
+    else
+    {
+        if (!loadMedia()) return;
+        while (tryAgain)
         {
-            if (checktoQuit()) {endGame();return;}
-            //kiem tra xem con choi duoc nua hay ko
-
-            performAnimation_QuickMove();
-            //SDL_Delay(300);
-            // chay hoat hinh khi di chuyen cac o
-
-            staySquare();
-            //Co dinh cac o
-            if (appear) createRandomNumber();
-
-            if (appear) performAnimation_AppearRandomSquare();
-            //hieu ung xuat hien o moi
-
-            if (appear) handleBonus();
-            // xu li bonus
-
-            renderBackground();
-            renderSquare();
-            drawPowerBox(powerPoint);
-
+            powerPoint = 50;combo = 0;score = 200;
+            createSquare();
+            createIceNum();
+            //iceNum[2][2] = true;iceNum[1][1] = true;iceNum[3][3] = true;
             createRandNum();
+            createRandomNumber();
+            createRandomNumber();
+            creategImageBlendingMode();
 
-            SDL_RenderPresent( gRenderer );
+            writeNumber();
+            bool quit = false;
+            endgame = false;
+            appear = false;  merged = false;
+            SDL_Event e;
 
-            appear = false; merged = false;
-
-            // khoi tao lai mang Ani
-            //break;
-            if ( SDL_PollEvent( &e ) != 0 )
+            while( !quit )
             {
+                if (checktoQuit()) {finishGame();break ;}
+                //kiem tra xem con choi duoc nua hay ko
 
-                if( e.type == SDL_QUIT )
+                performAnimation_QuickMove();
+                //SDL_Delay(300);
+                // chay hoat hinh khi di chuyen cac o
+
+                staySquare();
+                //Co dinh cac o
+                if (appear) createRandomNumber();
+
+                if (appear) performAnimation_AppearRandomSquare();
+                //hieu ung xuat hien o moi
+
+                if (appear) handleBonus();
+                // xu li bonus
+
+                renderBackground();
+                renderSquare();
+                drawPowerBox(powerPoint);
+
+                createRandNum();
+
+                SDL_RenderPresent( gRenderer );
+
+                appear = false; merged = false;
+
+                // khoi tao lai mang Ani
+                //break;
+                if ( SDL_PollEvent( &e ) != 0 )
                 {
-                    quit = true;
-                }
 
-                if (e.type == SDL_KEYDOWN)
-                    switch (e.key.keysym.sym)
+                    if( e.type == SDL_QUIT )
                     {
-                        case (SDLK_UP) :
+                        quit = true;tryAgain = false;
+                    }
+
+                    if (e.type == SDL_KEYDOWN)
+                        switch (e.key.keysym.sym)
                         {
-                            for (int i = 0; i < 4; ++i)
+                            case (SDLK_UP) :
                             {
-                                int pos = 0, preNum = -1;
-                                for (int j = 0; j < 4; ++j)
+                                for (int i = 0; i < 4; ++i)
                                 {
-                                    int Num = Square[i][j].PresentNumber;
-                                    if (iceNum[i][j])
+                                    int pos = 0, preNum = -1;
+                                    for (int j = 0; j < 4; ++j)
                                     {
-                                        pos = j+1; preNum = -1;
-                                        continue;
+                                        int Num = Square[i][j].PresentNumber;
+                                        if (iceNum[i][j])
+                                        {
+                                            pos = j+1; preNum = -1;
+                                            continue;
+                                        }
+                                        if (Num == -1) continue;
+                                        if (preNum == -1 || preNum != Num)
+                                        {
+                                            if (j != pos) appear = true;
+
+                                            Square[i][j] = ReFormatSquare(i, j, 0, -1, (j-pos)*22, Num, -1);
+                                            preNum = Num;
+                                            Square[i][pos].PresentNumber = Num;
+
+
+                                            ++pos;
+                                            continue;
+                                        }
+                                        appear = true;
+                                        merged = true;
+
+                                        Square[i][j] = ReFormatSquare(i, j, 0, -1, (j-pos+1)*22, Num, -1);
+                                        Square[i][pos-1].PresentNumber +=1;
+                                        score = score + transferScore(Square[i][pos-1].PresentNumber) *transferCombo(combo);
+                                        combo = combo + 1 ;
+                                        combo = std::min(combo,5);
+                                        preNum = -1;
+
                                     }
-                                    if (Num == -1) continue;
-                                    if (preNum == -1 || preNum != Num)
-                                    {
-                                        if (j != pos) appear = true;
-
-                                        Square[i][j] = ReFormatSquare(i, j, 0, -1, (j-pos)*22, Num, -1);
-                                        preNum = Num;
-                                        Square[i][pos].PresentNumber = Num;
-
-
-                                        ++pos;
-                                        continue;
-                                    }
-                                    appear = true;
-                                    merged = true;
-
-                                    Square[i][j] = ReFormatSquare(i, j, 0, -1, (j-pos+1)*22, Num, -1);
-                                    Square[i][pos-1].PresentNumber +=1;
-                                    score = score + transferScore(Square[i][pos-1].PresentNumber) *transferCombo(combo);
-                                    combo = combo + 1 ;
-                                    combo = std::min(combo,5);
-                                    preNum = -1;
-
                                 }
+
+                                writeNumber();
+                                break;
                             }
 
-                            writeNumber();
-                            break;
-                        }
-
-                        case (SDLK_DOWN) :
-                        {
-
-                            for (int i = 0; i < 4; ++i)
+                            case (SDLK_DOWN) :
                             {
-                                int pos = 3, preNum = -1 ;
-
-                                for (int j = 3; j >= 0; --j)
-                                {
-                                    int Num = Square[i][j].PresentNumber;
-
-                                    if (iceNum[i][j])
-                                    {
-                                        pos = j-1; preNum = -1;
-                                        continue;
-                                    }
-
-                                    if (Num == -1) continue;
-
-                                    if (preNum == -1 || preNum != Num)
-                                    {
-                                        if (j != pos) appear = true;
-
-                                        Square[i][j] = ReFormatSquare(i, j, 0, 1, (pos-j)*22, Num, -1);
-                                        preNum = Num;
-                                        Square[i][pos].PresentNumber = Num;
-
-                                        --pos;
-                                        continue;
-                                    }
-                                    appear = true;
-                                    merged = true;
-
-                                    Square[i][j] = ReFormatSquare(i, j, 0, 1, (pos+1-j)*22, Num, -1);
-                                    Square[i][pos+1].PresentNumber +=1;
-                                    score = score + transferScore(Square[i][pos+1].PresentNumber) *transferCombo(combo);
-                                    combo = combo + 1 ;
-                                    combo = std::min(combo,5);
-                                    preNum = -1;
-                                }
-                            }
-                            writeNumber();
-                            break;
-                        }
-
-                        case (SDLK_LEFT) :
-                        {
-
-                            for (int j = 0; j < 4; ++j)
-                            {
-                                int pos = 0, preNum = -1 ;
 
                                 for (int i = 0; i < 4; ++i)
                                 {
-                                    int Num = Square[i][j].PresentNumber;
+                                    int pos = 3, preNum = -1 ;
 
-                                    if (iceNum[i][j])
+                                    for (int j = 3; j >= 0; --j)
                                     {
-                                        pos = i+1; preNum = -1;
-                                        continue;
+                                        int Num = Square[i][j].PresentNumber;
+
+                                        if (iceNum[i][j])
+                                        {
+                                            pos = j-1; preNum = -1;
+                                            continue;
+                                        }
+
+                                        if (Num == -1) continue;
+
+                                        if (preNum == -1 || preNum != Num)
+                                        {
+                                            if (j != pos) appear = true;
+
+                                            Square[i][j] = ReFormatSquare(i, j, 0, 1, (pos-j)*22, Num, -1);
+                                            preNum = Num;
+                                            Square[i][pos].PresentNumber = Num;
+
+                                            --pos;
+                                            continue;
+                                        }
+                                        appear = true;
+                                        merged = true;
+
+                                        Square[i][j] = ReFormatSquare(i, j, 0, 1, (pos+1-j)*22, Num, -1);
+                                        Square[i][pos+1].PresentNumber +=1;
+                                        score = score + transferScore(Square[i][pos+1].PresentNumber) *transferCombo(combo);
+                                        combo = combo + 1 ;
+                                        combo = std::min(combo,5);
+                                        preNum = -1;
                                     }
-
-                                    if (Num == -1) continue;
-
-                                    if (preNum == -1 || preNum != Num)
-                                    {
-                                        if (i != pos ) appear = true;
-
-                                        Square[i][j] = ReFormatSquare(i, j, -1, 0, (i-pos)*22, Num, -1);
-                                        preNum = Num;
-                                        Square[pos][j].PresentNumber = Num;
-
-                                        ++pos;
-                                        continue;
-                                    }
-                                    appear = true;
-                                    merged = true;
-
-                                    Square[i][j] = ReFormatSquare(i, j, -1, 0, (i-pos+1)*22, Num, -1);
-                                    Square[pos-1][j].PresentNumber +=1;
-                                    score = score + transferScore(Square[pos-1][j].PresentNumber) *transferCombo(combo);
-                                    combo = combo + 1 ;
-                                    combo = std::min(combo,5);
-                                    preNum = -1;
                                 }
+                                writeNumber();
+                                break;
                             }
-                            writeNumber();
-                            break;
-                        }
 
-                        case (SDLK_RIGHT) :
-                        {
-
-                            for (int j = 0; j < 4; ++j)
+                            case (SDLK_LEFT) :
                             {
-                                int pos = 3, preNum = -1 ;
 
-                                for (int i = 3; i >= 0; --i)
+                                for (int j = 0; j < 4; ++j)
                                 {
-                                    int Num = Square[i][j].PresentNumber;
+                                    int pos = 0, preNum = -1 ;
 
-                                    if (iceNum[i][j])
+                                    for (int i = 0; i < 4; ++i)
                                     {
-                                        pos = i-1; preNum = -1;
-                                        continue;
+                                        int Num = Square[i][j].PresentNumber;
+
+                                        if (iceNum[i][j])
+                                        {
+                                            pos = i+1; preNum = -1;
+                                            continue;
+                                        }
+
+                                        if (Num == -1) continue;
+
+                                        if (preNum == -1 || preNum != Num)
+                                        {
+                                            if (i != pos ) appear = true;
+
+                                            Square[i][j] = ReFormatSquare(i, j, -1, 0, (i-pos)*22, Num, -1);
+                                            preNum = Num;
+                                            Square[pos][j].PresentNumber = Num;
+
+                                            ++pos;
+                                            continue;
+                                        }
+                                        appear = true;
+                                        merged = true;
+
+                                        Square[i][j] = ReFormatSquare(i, j, -1, 0, (i-pos+1)*22, Num, -1);
+                                        Square[pos-1][j].PresentNumber +=1;
+                                        score = score + transferScore(Square[pos-1][j].PresentNumber) *transferCombo(combo);
+                                        combo = combo + 1 ;
+                                        combo = std::min(combo,5);
+                                        preNum = -1;
                                     }
-
-                                    if (Num == -1) continue;
-
-                                    if (preNum == -1 || preNum != Num)
-                                    {
-                                        if (i != pos) appear = true;
-
-                                        Square[i][j] = ReFormatSquare(i, j, 1, 0, (pos-i)*22, Num, -1);
-                                        preNum = Num;
-                                        Square[pos][j].PresentNumber = Num;
-
-                                        --pos;
-                                        continue;
-                                    }
-                                    appear = true;
-                                    merged = true;
-
-                                    Square[i][j] = ReFormatSquare(i, j, 1, 0, (pos+1-i)*22, Num, -1);
-                                    Square[pos+1][j].PresentNumber +=1;
-                                    score = score + transferScore(Square[pos+1][j].PresentNumber) *transferCombo(combo);
-                                    combo = combo + 1 ;
-                                    combo = std::min(combo,5);
-                                    preNum = -1;
                                 }
+                                writeNumber();
+                                break;
                             }
-                            writeNumber();
-                            break;
+
+                            case (SDLK_RIGHT) :
+                            {
+
+                                for (int j = 0; j < 4; ++j)
+                                {
+                                    int pos = 3, preNum = -1 ;
+
+                                    for (int i = 3; i >= 0; --i)
+                                    {
+                                        int Num = Square[i][j].PresentNumber;
+
+                                        if (iceNum[i][j])
+                                        {
+                                            pos = i-1; preNum = -1;
+                                            continue;
+                                        }
+
+                                        if (Num == -1) continue;
+
+                                        if (preNum == -1 || preNum != Num)
+                                        {
+                                            if (i != pos) appear = true;
+
+                                            Square[i][j] = ReFormatSquare(i, j, 1, 0, (pos-i)*22, Num, -1);
+                                            preNum = Num;
+                                            Square[pos][j].PresentNumber = Num;
+
+                                            --pos;
+                                            continue;
+                                        }
+                                        appear = true;
+                                        merged = true;
+
+                                        Square[i][j] = ReFormatSquare(i, j, 1, 0, (pos+1-i)*22, Num, -1);
+                                        Square[pos+1][j].PresentNumber +=1;
+                                        score = score + transferScore(Square[pos+1][j].PresentNumber) *transferCombo(combo);
+                                        combo = combo + 1 ;
+                                        combo = std::min(combo,5);
+                                        preNum = -1;
+                                    }
+                                }
+                                writeNumber();
+                                break;
+                            }
                         }
                     }
-                }
 
+            }
         }
-	}
-	close();
+        close();
+    }
 }
 
 
