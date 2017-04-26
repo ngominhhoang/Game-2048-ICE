@@ -48,8 +48,8 @@ const int BonusScore[6] = {1,2,2,3,4,5};
 const int fix_x = 100;
 const int fix_y = -20;
 bool randNum[4][4],appear,merged,iceNum[4][4];
-bool endgame ;
-int tryAgain = 1;
+bool endgame , exitGame;
+int tryAgain ;
 int powerPoint,combo,score;
 
 struct Format
@@ -63,7 +63,7 @@ struct Format
     int PresentNumber;
 };
 
-struct ScoreBoard
+struct Winner
 {
     int Score;
     string Name;
@@ -71,7 +71,7 @@ struct ScoreBoard
 
 Format Square[4][4];
 
-ScoreBoard gRank[5];
+Winner gRank[5];
 
 //Texture wrapper class
 
@@ -1053,7 +1053,7 @@ void fillBlank(int pos)
     {
         if (SDL_PollEvent( &e ) != 0)
         {
-            if (e.type == SDL_QUIT) {quit = true; tryAgain=false;}
+            if (e.type == SDL_QUIT) {quit = true; tryAgain=false;exitGame = true;}
 
             const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
 
@@ -1150,7 +1150,7 @@ void finishGame()
     {
         if (SDL_PollEvent( &e ) != 0)
         {
-            if (e.type == SDL_QUIT) {quit = true;tryAgain=false;}
+            if (e.type == SDL_QUIT) {quit = true;tryAgain=false;exitGame = true;}
             if (e.type == SDL_KEYDOWN)
             {
                 if (e.key.keysym.sym == SDLK_RIGHT || e.key.keysym.sym == SDLK_LEFT) flag = 1-flag;
@@ -1268,21 +1268,21 @@ void writeNumber()
      std::cout<<std::endl;
 }
 
-void Play()
+bool Play()
 {
     //cout<<tryAgain;
     //if (tryAgain==0) return;
-    tryAgain = 1;
+    tryAgain = 1;exitGame = false;
     if( !init() )
     {
         printf( "Failed to initialize!\n" );
     }
     else
     {
-        if (!loadMedia()) return;
+        if (!loadMedia()) return true;
         while (tryAgain)
         {
-            powerPoint = 50;combo = 0;score = 200;
+            powerPoint = 50;combo = 0;score = 0;
             createSquare();
             createIceNum();
             //iceNum[2][2] = true;iceNum[1][1] = true;iceNum[3][3] = true;
@@ -1333,7 +1333,7 @@ void Play()
 
                     if( e.type == SDL_QUIT )
                     {
-                        quit = true;tryAgain = false;
+                        quit = true;tryAgain = false;exitGame = true;
                     }
 
                     if (e.type == SDL_KEYDOWN)
@@ -1523,6 +1523,7 @@ void Play()
         }
         close();
     }
+    return exitGame;
 }
 
 

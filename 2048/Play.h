@@ -59,6 +59,6 @@ void performAnimation_QuickMove();
 void performAnimation_FadedScreen();
 bool checktoQuit();
 void createRandNum();
-void Play();
+bool Play();
 
 #endif

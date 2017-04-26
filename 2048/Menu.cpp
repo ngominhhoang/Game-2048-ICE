@@ -29,6 +29,8 @@ const std::string link_Prev = "imageMenu/Prev.png";
 const std::string link_Prev_e = "imageMenu/Prev_e.png";
 const std::string link_Next = "imageMenu/Next.png";
 const std::string link_Next_e = "imageMenu/Next_e.png";
+const std::string link_ScoreBoard = "imageMenu/scoreboard.png";
+const std::string link_BackScoreBoard = "imageMenu/BackScoreBoard.png";
 
 SDL_Rect Rect[2];
 SDL_Rect RectColor[3];
@@ -36,13 +38,14 @@ int Widthx,Heightx;
 int flag = 0;
 int k = 1;
 int space = 1;
-bool quit;
+bool success,quit;
+int lengthScore[5];
 
 SDL_Window* mWindow = NULL;
 SDL_Renderer* mRenderer = NULL;
 TTF_Font *mFont = NULL;
-MTexture imageBackground,imageOption[3][2],TextTutoBG,TextTutoReturn,TextTutoMain[lenText][2],imageHeader,imageTutoBG,
-                                    imageTutoOpt[3][2],imageSlide[2];
+MTexture imageBackground,imageOption[3][2],TextTutoMain[lenText][2],imageHeader,imageTutoBG,
+                        imageTutoOpt[3][2],imageSlide[2],ScoreBoard,TextName[5],TextScore_M[5],imageBackSB;
 
 
 MTexture::MTexture()
@@ -228,14 +231,6 @@ bool loadFont()
     bool success = true;
     SDL_Color TextColor = {0,0,0};
 
-    mFont = TTF_OpenFont( "Font/lazy.ttf", 72 );
-    if (mFont == NULL) success = false;
-    TextTutoBG.loadFromRenderedText("Tutorial",TextColor);
-
-    mFont = TTF_OpenFont( "Font/lazy.ttf", 60 );
-    if (mFont == NULL) success = false;
-    TextTutoReturn.loadFromRenderedText("Return",TextColor);
-
     ifstream fi("imageMenu/Tutorial.txt");
 
     mFont = TTF_OpenFont( "Font/lazy.ttf", 30 );
@@ -248,6 +243,21 @@ bool loadFont()
             getline(fi,s);
             TextTutoMain[i][j].loadFromRenderedText(s,TextColor);
         }
+
+    ifstream file_Name ("Text/Name.txt");
+    ifstream file_Score ("Text/Score.txt");
+
+    mFont = TTF_OpenFont( "Font/lazy.ttf", 50 );
+    if (mFont == NULL) success = false;
+    for (int i=0; i<5; ++i)
+    {
+        string Name,Score;
+        getline(file_Name,Name);
+        getline(file_Score,Score);
+        lengthScore[i] = Score.length();
+        TextName[i].loadFromRenderedText(Name,TextColor);
+        TextScore_M[i].loadFromRenderedText(Score,TextColor);
+    }
 
     return success;
 }
@@ -310,25 +320,51 @@ bool MloadMedia()
         return false;
     }
 
+    if (!ScoreBoard.loadFromFile(link_ScoreBoard))
+    {
+        printf( "Failed to load ScoreBoard image!\n" );
+        return false;
+    }
+
+    if (!imageBackSB.loadFromFile(link_BackScoreBoard))
+    {
+        printf( "Failed to load ScoreBoard image!\n" );
+        return false;
+    }
+
     if (!loadFont())
     {
         printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
         return false;
     }
 
-
     return true;
 }
 
 void Mclose()
 {
-    //Free loaded images
     imageBackground.free();
-    TextTutoBG.free();
-    TextTutoReturn.free();
-    for (int i=0; i<lenText; ++i)
-        for (int j=0; j<2 ; ++j)
+    imageHeader.free();
+    imageTutoBG.free();
+    imageBackSB.free();
+    for (int i=0; i<2; ++i)
+        for (int j=0; j<2; ++j)
+        {
+            imageTutoOpt[i][j].free();
+            imageOption[i][j].free();
+        }
+
+    for (int i = 0; i < lenText; ++i)
+        for (int j = 0; j < 2; ++j)
+        {
             TextTutoMain[i][j].free();
+        }
+
+    for (int i=0; i<5; ++i)
+    {
+        TextName[i].free();
+        TextScore_M[i].free();
+    }
 
     //Destroy window
     SDL_DestroyRenderer( mRenderer );
@@ -380,7 +416,8 @@ void Tutorial()
             if( e.type == SDL_QUIT )
             {
                 quit = true;
-                return;
+                success = false;
+                exit = true;
             }
 
             if (e.type == SDL_KEYDOWN)
@@ -484,10 +521,45 @@ void Tutorial()
     }
 }
 
+void HighScore()
+{
+    bool exit = false;
+    while (!exit)
+    {
+        SDL_Event e;
+        if ( SDL_PollEvent( &e ) != 0 )
+        {
+            if( e.type == SDL_QUIT )
+            {
+                quit = true;
+                success = false;
+                exit = true;
+            }
+
+            if (e.type == SDL_KEYDOWN)
+                if (e.key.keysym.sym == SDLK_RETURN) exit = true;
+        }
+        drawBackGround();
+        ScoreBoard.render(65,10);
+        imageBackSB.render(450,600);
+        int add = 75;
+        for (int i=0; i<5; ++i)
+        {
+            TextName[i].render(350,220+add*i);
+            TextScore_M[i].render(830 + (8-lengthScore[i])*15 ,220+add*i);
+        }
+        SDL_RenderPresent(mRenderer);
+        SDL_Delay(3);
+    }
+}
+
 
 bool Menu()
 {
-    bool success = false;
+    flag = 0;
+    k = 1;
+    space = 1;
+    success = false;
 	//Start up SDL and create window
 
 	if( !Minit() )
@@ -505,7 +577,7 @@ bool Menu()
 		{
 			//Main loop flag
             quit = false;
-			bool tuto = false;
+			//bool tuto = false;
 
 			//Event handler
 			SDL_Event e;
@@ -530,19 +602,14 @@ bool Menu()
 					}
                     if (e.type == SDL_KEYDOWN)
                     {
-                        if (!tuto)
+
+                        if (e.key.keysym.sym == SDLK_UP) flagColor = (flagColor + 2)%3;
+                        if (e.key.keysym.sym == SDLK_DOWN)  flagColor = (flagColor + 1)%3;
+                        if (e.key.keysym.sym == SDLK_RETURN)
                         {
-                            if (e.key.keysym.sym == SDLK_UP) flagColor = (flagColor + 2)%3;
-                            if (e.key.keysym.sym == SDLK_DOWN)  flagColor = (flagColor + 1)%3;
-                            if (e.key.keysym.sym == SDLK_RETURN)
-                            {
-                                if (flagColor % 3 == 0) {quit = true;success = true;}
-                                if (flagColor % 3 == 1) Tutorial();
-                            }
-                        }
-                            else
-                        {
-                            if (e.key.keysym.sym == SDLK_RETURN) tuto = false;
+                            if (flagColor % 3 == 0) {quit = true;success = true;}
+                            if (flagColor % 3 == 1) Tutorial();
+                            if (flagColor % 3 == 2) HighScore();
                         }
                     }
 				}

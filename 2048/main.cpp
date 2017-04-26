@@ -4,7 +4,13 @@
 int main( int argc, char* args[] )
 {
     srand(time(NULL));
+    while (true)
+    {
+        //Play(cWindow, cRenderer);
+        if (!Menu()) break;
+        if (Play()) break;
+    }
     //Play();
-    if (Menu()) Play();
+    //Menu();
 	return 0;
 }

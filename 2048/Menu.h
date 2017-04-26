@@ -37,7 +37,7 @@ class MTexture
 };
 
 bool loadFont();
-bool Minit();
+//bool Minit();
 bool Menu();
 void Tutorial();
 void Mclose();
