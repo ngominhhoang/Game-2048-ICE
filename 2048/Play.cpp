@@ -1,8 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include <stdio.h>
-#include <string>
+#include <SDL_mixer.h>
 #include <bits/stdc++.h>
 #include "Play.h"
 
@@ -15,6 +14,8 @@ const int sum_gImage = 14;
 const int sum_randImage = 3;
 const int sum_letter = 8;
 const int sum_rank = 5;
+const int sum_GPMusic = 4;
+const int sum_GPSoundEffect = 6;
 const std::string link_gImage[21] = {"Image/2.png","Image/4.png","Image/8.png","Image/16.png","Image/32.png","Image/64.png",
     "Image/128.png","Image/256.png","Image/512.png","Image/1024.png","Image/2048.png","Image/4096.png","Image/8192.png","Image/16384.png"};
 
@@ -38,6 +39,13 @@ const std::string link_PlayAgain_e = "Image/PlayAgain_e.png";
 const std::string link_BacktoMenu_e = "Image/BacktoMenu_e.png";
 const std::string link_CongratBoard = "Image/CongratulationBoard.png";
 const std::string link_Star[sum_rank] = {"Image/Rank1.png","Image/Rank2.png","Image/Rank3.png","Image/Rank4.png","Image/Rank5.png"};
+const std::string link_GPMusic[sum_GPMusic] = {"Music/bensound-dance.mp3","Music/Bumbling-Burglars.mp3","Music/Disco-Ants-Go-Clubbin.mp3",
+                                                            "Music/alun2-endcredits.mp3"};
+
+const std::string link_GPSoundEffect[sum_GPSoundEffect] = {"Music/2516__jonnay__dropsine.wav","Music/172667__underlineddesigns__military-rotor-loop.wav",
+                                                "Music/65917__bristolstories__tinkle-smash-glass.wav","Music/345911__abstractasylum__1-9-massive-freeze.wav",
+                                                "Music/73750__timbre__remix-of-benboncan-sad-trombone-more-wah-bright-de-clicked.wav",
+                                                "Music/245639__nickrave__moreclaps.aiff"};
 
 const int row[4] = {0,0,-1,1};
 const int column[4] = {1,-1,0,0};
@@ -50,7 +58,7 @@ const int fix_y = -20;
 bool randNum[4][4],appear,merged,iceNum[4][4];
 bool endgame , exitGame;
 int tryAgain ;
-int powerPoint,combo,score;
+int powerPoint,combo,score,volumn;
 
 struct Format
 {
@@ -68,6 +76,9 @@ struct Winner
     int Score;
     string Name;
 };
+
+Mix_Music *GPMusic[sum_GPMusic] = {NULL,NULL,NULL,NULL};
+Mix_Chunk *GPSoundEffect[sum_GPSoundEffect] = {NULL,NULL,NULL,NULL,NULL,NULL};
 
 Format Square[4][4];
 
@@ -283,6 +294,12 @@ bool init()
 					printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
 					success = false;
 				}
+
+				if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+                {
+                    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+                    success = false;
+                }
 			}
 		}
 	}
@@ -429,11 +446,32 @@ bool loadMedia()
         return false;
     }
 
+    for (int i=0; i<sum_GPMusic; ++i)
+    {
+        GPMusic[i] = Mix_LoadMUS( link_GPMusic[i].c_str() );
+        if( GPMusic[i] == NULL )
+        {
+            printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+            return false;
+        }
+    }
+
+    for (int i=0; i<sum_GPSoundEffect; ++i)
+    {
+        GPSoundEffect[i] = Mix_LoadWAV( link_GPSoundEffect[i].c_str() );
+        if( GPSoundEffect[i] == NULL )
+        {
+            printf( "Failed to load beat music! SDL_mixer Error: %s\n", Mix_GetError() );
+            return false;
+        }
+    }
+
     return true;
 }
 
 void close()
 {
+    Mix_HaltMusic();
 	for (int i=0; i<sum_gImage; ++i)
     {
         gImage_Rotation[i].free();
@@ -471,6 +509,18 @@ void close()
         PlayAgain[i].free();BacktoMenu[i].free();
     }
 
+    for (int i=0; i<sum_GPMusic; ++i)
+    {
+        Mix_FreeMusic(GPMusic[i]);
+        GPMusic[i] = NULL;
+    }
+
+    for (int i=0; i<sum_GPSoundEffect; ++i)
+    {
+        Mix_FreeChunk(GPSoundEffect[i]);
+        GPSoundEffect[i] = NULL;
+    }
+
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -484,7 +534,7 @@ void close()
 
 	//Quit SDL subsystems
 	IMG_Quit();
-	SDL_Quit();
+	//SDL_Quit();
 	TTF_Quit();
 }
 
@@ -585,6 +635,7 @@ void creategImageBlendingMode()
 {
     for (int i=0; i<sum_gImage; ++i)
         gImage[i].setAlpha(255);
+    ICE.setAlpha(255);
 }
 
 void drawScore()
@@ -661,6 +712,28 @@ void renderSquare()
 
 void renderBackground()
 {
+    //cout<<volumn<<endl;
+    Mix_VolumeMusic(volumn);
+    if (Mix_PlayingMusic() == 0)
+    {
+        //cout<<1;
+        int t = rand()%3;
+        //if (endgame) t = 3;
+        //cout<<t;
+        //t=2;
+        if (!endgame) Mix_PlayMusic(GPMusic[t],2);
+        switch (t)
+        {
+            case 0:
+                volumn = 25;break;
+            case 1:
+                volumn = 100;break;
+            case 2:
+                volumn = 100;break;
+            case 3:
+                volumn = 100;break;
+        }
+    }
     SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
     SDL_RenderClear( gRenderer );
     background.render(0,0,NULL);
@@ -791,6 +864,8 @@ void performAnimation_ChangePowerBox(int start, int target)
 
 void performAnimation_FreezingSquare()
 {
+    Mix_PlayChannel( -1, GPSoundEffect[3], 0 );
+
     int Count = 0,iceNow_x = -1,iceNow_y = -1;
 
     for (int i = 0; i < 4; ++i)
@@ -887,11 +962,19 @@ void performAnimation_BreakIce(int ii,int jj)
 
 void performAnimation_x2Square()
 {
+
     bool kt =false;
     for (int i=0; i<4; ++i)
         for (int j=0; j<4; ++j)
-            if (iceNum[i][j]) {kt = true; performAnimation_BreakIce(i,j); }
+            if (iceNum[i][j])
+            {
+                kt = true;
+                Mix_PlayChannel( -1, GPSoundEffect[2], 0 );
+                performAnimation_BreakIce(i,j);
+            }
     if (kt) return;
+
+    Mix_PlayChannel( -1, GPSoundEffect[1], 0 );
 
     int maxx = -1,x2Now_x = -1,x2Now_y = -1;
 
@@ -997,6 +1080,7 @@ void performAnimation_x2Square()
 
 void performAnimation_dropGAMEOVER()
 {
+    Mix_PlayChannel( -1, GPSoundEffect[4], 0 );
     int flag_e = 0,flag_b=0, time[8] , ang[8] ;
 
     for (int i=0; i<8; ++i)
@@ -1038,6 +1122,7 @@ void performAnimation_dropGAMEOVER()
 
 void fillBlank(int pos)
 {
+    Mix_PlayChannel( -1, GPSoundEffect[5], 0 );
     SDL_Event e;
     bool quit = false;
     SDL_Color TextColor = {0,0,0};
@@ -1121,6 +1206,7 @@ void RenewScoreBoard()
 
 void finishGame()
 {
+    Mix_HaltMusic();
     endgame = true;
 
     performAnimation_FadedScreen();
@@ -1129,6 +1215,9 @@ void finishGame()
             Square[i][j].PresentNumber = -1;
 
     performAnimation_dropGAMEOVER();
+
+    Mix_VolumeMusic(100);
+    Mix_PlayMusic(GPMusic[3],-1);
 
     bool fillName = false;
     int newRank;
@@ -1272,7 +1361,7 @@ bool Play()
 {
     //cout<<tryAgain;
     //if (tryAgain==0) return;
-    tryAgain = 1;exitGame = false;
+    tryAgain = 1;exitGame = false;volumn = 100;
     if( !init() )
     {
         printf( "Failed to initialize!\n" );
@@ -1283,6 +1372,7 @@ bool Play()
         while (tryAgain)
         {
             powerPoint = 50;combo = 0;score = 0;
+            Mix_HaltMusic();
             createSquare();
             createIceNum();
             //iceNum[2][2] = true;iceNum[1][1] = true;iceNum[3][3] = true;
@@ -1308,6 +1398,8 @@ bool Play()
 
                 staySquare();
                 //Co dinh cac o
+                if (appear) Mix_PlayChannel( -1, GPSoundEffect[0], 0 );
+
                 if (appear) createRandomNumber();
 
                 if (appear) performAnimation_AppearRandomSquare();

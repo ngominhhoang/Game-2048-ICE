@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <bits/stdc++.h>
 #include "Menu.h"
 
@@ -13,6 +14,7 @@ const int SCREEN_HEIGHT = 720;
 const int lenText = 4;
 const int xText = 140;
 const int yText = 220;
+
 const std::string link_Play = "imageMenu/Play.png";
 const std::string link_Help = "imageMenu/Help.png";
 const std::string link_Score = "imageMenu/Score.png";
@@ -32,6 +34,8 @@ const std::string link_Next_e = "imageMenu/Next_e.png";
 const std::string link_ScoreBoard = "imageMenu/scoreboard.png";
 const std::string link_BackScoreBoard = "imageMenu/BackScoreBoard.png";
 
+const std::string link_Music = {"Music/bensound-retrosoul.mp3"};
+
 SDL_Rect Rect[2];
 SDL_Rect RectColor[3];
 int Widthx,Heightx;
@@ -40,6 +44,9 @@ int k = 1;
 int space = 1;
 bool success,quit;
 int lengthScore[5];
+int dem ;
+
+Mix_Music *BGMusic = NULL;
 
 SDL_Window* mWindow = NULL;
 SDL_Renderer* mRenderer = NULL;
@@ -220,6 +227,12 @@ bool Minit()
 					printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
 					success = false;
 				}
+
+				if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+                {
+                    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+                    success = false;
+                }
 			}
         }
     }
@@ -259,6 +272,20 @@ bool loadFont()
         TextScore_M[i].loadFromRenderedText(Score,TextColor);
     }
 
+    return success;
+}
+
+bool loadMusic()
+{
+    int success = true;
+
+    BGMusic = Mix_LoadMUS( link_Music.c_str() );
+    if( BGMusic == NULL )
+    {
+        printf( "Failed to load medium sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+    //cout<<link_Music;
     return success;
 }
 
@@ -338,6 +365,12 @@ bool MloadMedia()
         return false;
     }
 
+    if (!loadMusic())
+    {
+        printf( "Failed to load music! SDL_ttf Error: %s\n", TTF_GetError() );
+        return false;
+    }
+
     return true;
 }
 
@@ -366,6 +399,9 @@ void Mclose()
         TextScore_M[i].free();
     }
 
+    Mix_FreeMusic( BGMusic );
+    BGMusic = NULL;
+
     //Destroy window
     SDL_DestroyRenderer( mRenderer );
     SDL_DestroyWindow( mWindow );
@@ -375,14 +411,22 @@ void Mclose()
     //Quit SDL subsystems
     TTF_CloseFont( mFont );
 	mFont = NULL;
+	//Mix_HaltMusic();
+
 
     TTF_Quit();
     IMG_Quit();
-    SDL_Quit();
+    //SDL_Quit();
+    Mix_Quit();
 }
 
 void drawBackGround()
 {
+    if (Mix_PlayingMusic() == 0)
+    {
+        //cout<<"haha"<<endl;
+        Mix_PlayMusic(BGMusic,-1);
+    }
     SDL_SetRenderDrawColor( mRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
     SDL_SetRenderDrawBlendMode(mRenderer,SDL_BLENDMODE_NONE);
     SDL_RenderClear( mRenderer );
@@ -632,6 +676,7 @@ bool Menu()
 
 	//Free resources and close SDL
 	Mclose();
+
 	return success;
 
 }

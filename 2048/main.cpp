@@ -10,6 +10,7 @@ int main( int argc, char* args[] )
         if (!Menu()) break;
         if (Play()) break;
     }
+    SDL_Quit();
     //Play();
     //Menu();
 	return 0;

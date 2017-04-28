@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1493216061 source:e:\informatics\sdl\0_project 2048\2048\main.cpp
+1493302373 source:e:\informatics\sdl\0_project 2048\2048\main.cpp
 	"Play.h"
 	"Menu.h"
 
@@ -9,12 +9,11 @@
 	<SDL_ttf.h>
 	<bits/stdc++.h>
 
-1493217565 source:e:\informatics\sdl\0_project 2048\2048\play.cpp
+1493393442 source:e:\informatics\sdl\0_project 2048\2048\play.cpp
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_ttf.h>
-	<stdio.h>
-	<string>
+	<SDL_mixer.h>
 	<bits/stdc++.h>
 	"Play.h"
 
@@ -23,10 +22,11 @@
 	<SDL_image.h>
 	<bits/stdc++.h>
 
-1493134979 source:e:\informatics\sdl\0_project 2048\2048\menu.cpp
+1493392728 source:e:\informatics\sdl\0_project 2048\2048\menu.cpp
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_ttf.h>
+	<SDL_mixer.h>
 	<bits/stdc++.h>
 	"Menu.h"
 
