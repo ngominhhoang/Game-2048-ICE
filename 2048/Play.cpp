@@ -42,10 +42,10 @@ const std::string link_Star[sum_rank] = {"Image/Rank1.png","Image/Rank2.png","Im
 const std::string link_GPMusic[sum_GPMusic] = {"Music/bensound-dance.mp3","Music/Bumbling-Burglars.mp3","Music/Disco-Ants-Go-Clubbin.mp3",
                                                             "Music/alun2-endcredits.mp3"};
 
-const std::string link_GPSoundEffect[sum_GPSoundEffect] = {"Music/2516__jonnay__dropsine.wav","Music/172667__underlineddesigns__military-rotor-loop.wav",
-                                                "Music/65917__bristolstories__tinkle-smash-glass.wav","Music/345911__abstractasylum__1-9-massive-freeze.wav",
-                                                "Music/73750__timbre__remix-of-benboncan-sad-trombone-more-wah-bright-de-clicked.wav",
-                                                "Music/245639__nickrave__moreclaps.aiff"};
+const std::string link_GPSoundEffect[sum_GPSoundEffect] = {"Music/makeSquare.wav","Music/x2.wav",
+                                                "Music/breakIce.wav","Music/freezed.wav",
+                                                "Music/gameOver.wav",
+                                                "Music/clap.aiff"};
 
 const int row[4] = {0,0,-1,1};
 const int column[4] = {1,-1,0,0};
@@ -1381,7 +1381,7 @@ bool Play()
             createRandomNumber();
             creategImageBlendingMode();
 
-            writeNumber();
+            //writeNumber();
             bool quit = false;
             endgame = false;
             appear = false;  merged = false;
@@ -1470,7 +1470,7 @@ bool Play()
                                     }
                                 }
 
-                                writeNumber();
+                                //writeNumber();
                                 break;
                             }
 
@@ -1515,7 +1515,7 @@ bool Play()
                                         preNum = -1;
                                     }
                                 }
-                                writeNumber();
+                                //writeNumber();
                                 break;
                             }
 
@@ -1560,7 +1560,7 @@ bool Play()
                                         preNum = -1;
                                     }
                                 }
-                                writeNumber();
+                                //writeNumber();
                                 break;
                             }
 
@@ -1605,7 +1605,7 @@ bool Play()
                                         preNum = -1;
                                     }
                                 }
-                                writeNumber();
+                                //writeNumber();
                                 break;
                             }
                         }

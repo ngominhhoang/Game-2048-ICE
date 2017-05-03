@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="Menu.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Play.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="730" topLine="12" />
-		</Cursor>
-	</File>
-	<File name="Play.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="36696" topLine="447" />
+			<Cursor1 position="36761" topLine="1184" />
 		</Cursor>
 		<Folding>
 			<Collapse line="104" />
@@ -23,65 +18,37 @@
 			<Collapse line="239" />
 			<Collapse line="244" />
 			<Collapse line="310" />
-			<Collapse line="541" />
-			<Collapse line="546" />
-			<Collapse line="551" />
-			<Collapse line="556" />
-			<Collapse line="561" />
-			<Collapse line="566" />
-			<Collapse line="571" />
-			<Collapse line="586" />
-			<Collapse line="593" />
-			<Collapse line="602" />
-			<Collapse line="609" />
-			<Collapse line="641" />
-			<Collapse line="675" />
-			<Collapse line="691" />
-			<Collapse line="713" />
-			<Collapse line="743" />
-			<Collapse line="754" />
-			<Collapse line="788" />
-			<Collapse line="825" />
-			<Collapse line="850" />
-			<Collapse line="865" />
-			<Collapse line="922" />
-			<Collapse line="963" />
-			<Collapse line="1081" />
-			<Collapse line="1123" />
-			<Collapse line="1195" />
-			<Collapse line="1207" />
-			<Collapse line="1273" />
-			<Collapse line="1298" />
-			<Collapse line="1349" />
 		</Folding>
 	</File>
-	<File name="Play.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Menu.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1309" topLine="6" />
+			<Cursor1 position="730" topLine="12" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="200" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="resource.rc" open="1" top="1" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="66" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="Menu.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5966" topLine="106" />
+			<Cursor1 position="5966" topLine="24" />
 		</Cursor>
 		<Folding>
 			<Collapse line="58" />
 			<Collapse line="66" />
 			<Collapse line="72" />
 			<Collapse line="113" />
-			<Collapse line="147" />
-			<Collapse line="159" />
-			<Collapse line="171" />
-			<Collapse line="176" />
-			<Collapse line="181" />
-			<Collapse line="242" />
-			<Collapse line="278" />
-			<Collapse line="292" />
 		</Folding>
 	</File>
-	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
+	<File name="Play.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="200" topLine="0" />
+			<Cursor1 position="1309" topLine="6" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

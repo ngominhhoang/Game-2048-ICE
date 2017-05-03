@@ -9,7 +9,7 @@
 	<SDL_ttf.h>
 	<bits/stdc++.h>
 
-1493393442 source:e:\informatics\sdl\0_project 2048\2048\play.cpp
+1493827074 source:e:\informatics\sdl\0_project 2048\2048\play.cpp
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_ttf.h>
@@ -29,4 +29,6 @@
 	<SDL_mixer.h>
 	<bits/stdc++.h>
 	"Menu.h"
+
+1493833186 source:e:\informatics\sdl\0_project 2048\2048\resource.rc
 
